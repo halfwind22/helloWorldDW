@@ -2,6 +2,20 @@
 
 Sample Dropwizard application with both synchronous and async endpoints.
 
+# Resources
+
+    GET     /helloworld (com.halfwind.resources.HelloWorldResource)
+    POST    /patientservice/patient/v3 (com.halfwind.resources.PatientResource)
+    GET     /patientservice/patient/{id} (com.halfwind.resources.PatientResource)
+    GET     /patientservice/patients (com.halfwind.resources.PatientResource)
+    POST    /patientservice/patients (com.halfwind.resources.PatientResource)
+    POST    /patientservice/patients/v2 (com.halfwind.resources.PatientResource)
+
+# Async endpoint :
+    Lets you submit requests, that would be processed as a batch and you get a response,later.
+
+    POST    /patientservice/patients/v2 (com.halfwind.resources.PatientResource)
+
 How to start the helloWorldDW application
 ---
 
