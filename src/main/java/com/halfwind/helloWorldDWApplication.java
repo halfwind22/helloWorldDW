@@ -1,5 +1,6 @@
 package com.halfwind;
 
+import com.halfwind.core.ExecutionService;
 import com.halfwind.core.PatientServiceImpl;
 import com.halfwind.health.TemplateHealthCheck;
 import com.halfwind.resources.HelloWorldResource;
@@ -7,6 +8,9 @@ import com.halfwind.resources.PatientResource;
 import io.dropwizard.core.Application;
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
+
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class helloWorldDWApplication extends Application<helloWorldDWConfiguration> {
 
@@ -35,12 +39,21 @@ public class helloWorldDWApplication extends Application<helloWorldDWConfigurati
         );
         environment.jersey().register(resource);
 
-        PatientResource patientResource = new PatientResource(new PatientServiceImpl());
+        PatientServiceImpl globalPatientSvcImpl = new PatientServiceImpl();
+        PatientResource patientResource = new PatientResource(globalPatientSvcImpl);
 
         environment.jersey().register(patientResource);
 
         TemplateHealthCheck templateHealthCheck = new TemplateHealthCheck(configuration.getTemplate());
-        environment.healthChecks().register("Formatting Health Check",templateHealthCheck);
+        environment.healthChecks().register("Formatting Health Check", templateHealthCheck);
+
+        ScheduledExecutorService scheduledExecutorService = environment.lifecycle()
+                .scheduledExecutorService("helloWorld-executor")
+                .threads(2)
+                .build();
+
+        scheduledExecutorService.scheduleWithFixedDelay(new ExecutionService(globalPatientSvcImpl), 8, 5, TimeUnit.SECONDS);
+
 
     }
 

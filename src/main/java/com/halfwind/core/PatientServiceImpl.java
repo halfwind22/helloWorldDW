@@ -1,20 +1,27 @@
 package com.halfwind.core;
 
 import com.halfwind.api.Patient;
+import lombok.Getter;
 
 import javax.inject.Singleton;
 import java.util.*;
+import java.util.concurrent.*;
 
 @Singleton
 public class PatientServiceImpl implements PatientService {
 
-    Map<Long, Patient> patientMap = new HashMap<Long, Patient>();
+    @Getter
+    private final Map<Long, Patient> patientMap;
+    @Getter
+    private final Map<Long, String> resultList;
+
     long currentId = 123;
 
-    List<String> listOfNames = new LinkedList<>();
-
     public PatientServiceImpl() {
-        patientMap.put(currentId,new Patient(currentId,"John"));
+        this.patientMap = new ConcurrentHashMap<Long, Patient>();
+        this.resultList = new ConcurrentHashMap<Long, String>();
+        this.patientMap.put(currentId, new Patient(currentId, "John"));
+        System.out.println("Instantiated with mapzise: " + this.patientMap.size());
     }
 
     @Override
@@ -31,9 +38,7 @@ public class PatientServiceImpl implements PatientService {
 
     @Override
     public void createPatient(Patient patient) {
-
-        patientMap.put(patient.getId(),patient);
-        listOfNames.add(patient.getName());
+        patientMap.put(patient.getId(), patient);
 
     }
 
@@ -43,17 +48,27 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
-    public String processPatient(Long id) {
-        StringBuilder emptyString = new StringBuilder();
-        for (String name : listOfNames) {
-            emptyString.append(name).append("---");
+    public CompletableFuture<String> createPatientV2(Patient patient) {
+
+        int patientId = patient.getId().intValue();
+        patientMap.put(patient.getId(), patient);
+        System.out.println("Inserted and giving a future!");
+        return CompletableFuture.supplyAsync(() -> retrieveResult(patientId));
+    }
+
+    public String retrieveResult(int id) {
+        /*
+         * Blocking
+         * */
+        while (!resultList.containsKey((long) id)) {
+            try {
+                Thread.sleep(1000);
+                System.out.println("Waiting for the result of: " + id + " !");
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
-        try {
-            Thread.sleep(1500);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        System.out.println("Returning " + emptyString + " from thread: "+ Thread.currentThread().getName());
-        return emptyString.substring(0, emptyString.length()-3);
+        System.out.println("Finally got the result of: " + id + " !");
+        return resultList.get((long) id);
     }
 }
