@@ -3,6 +3,8 @@ package com.halfwind.core;
 import com.halfwind.api.Patient;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 public interface PatientService {
 
@@ -11,8 +13,8 @@ public interface PatientService {
     public List<Patient> getPatients();
 
     public void createPatient(Patient patient);
+
     public void deletePatient(int id);
 
-    public String processPatient(Long id);
-
+    CompletableFuture<String> createPatientV2(Patient patient);
 }

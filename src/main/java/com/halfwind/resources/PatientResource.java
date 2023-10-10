@@ -16,13 +16,15 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.NotSupportedException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 
 @Path("/patientservice")
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes({MediaType.APPLICATION_JSON,MediaType.MULTIPART_FORM_DATA,MediaType.APPLICATION_FORM_URLENCODED})
+@Consumes({MediaType.APPLICATION_JSON, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_FORM_URLENCODED})
 
 public class PatientResource {
 
@@ -34,7 +36,7 @@ public class PatientResource {
 
     @GET
     @Path("/patients")
-    public Response getPatients(){
+    public Response getPatients() {
 
         List<Patient> listOfPatients = patientService.getPatients();
         return Response.ok(listOfPatients).build();
@@ -47,15 +49,14 @@ public class PatientResource {
 
         String message = null;
         Long id = patient.getId();
-        String name =patient.getName();
+        String name = patient.getName();
 
         try {
             patientService.createPatient(new Patient(id, name));
             message = "Resource created successfully";
-            }
-        catch (NotSupportedException e) {
+        } catch (NotSupportedException e) {
             message = "Some error happened, please try later";
-            return Response.status(500,message).build();
+            return Response.status(500, message).build();
         }
 
         return Response.ok(message).build();
@@ -65,7 +66,7 @@ public class PatientResource {
 
     @POST
     @Path("/patients/v2")
-    @Consumes({MediaType.MULTIPART_FORM_DATA,MediaType.APPLICATION_FORM_URLENCODED})
+    @Consumes({MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_FORM_URLENCODED})
     public Response createPatientV2(@FormParam(value = "id") Long id, @FormParam(value = "name") String name, @Context HttpHeaders headers) {
 
         String message = null;
@@ -73,10 +74,9 @@ public class PatientResource {
         try {
             patientService.createPatient(new Patient(id, name));
             message = "Resource created successfully";
-        }
-        catch (NotSupportedException e) {
+        } catch (NotSupportedException e) {
             message = "Some error happened, please try later";
-            return Response.status(500,message).build();
+            return Response.status(500, message).build();
         }
 
         return Response.ok(message).build();
@@ -85,23 +85,21 @@ public class PatientResource {
 
     @GET
     @Path("/patient/{id}")
-    public Response getPatient(@PathParam(value="id") Long id){
+    public Response getPatient(@PathParam(value = "id") Long id) {
 
         Patient requestedPatient = patientService.getPatient(id);
         return Response.ok(requestedPatient).build();
 
     }
 
-    @GET
-    @Path("/patient/v2/{id}")
+    @POST
+    @Path("/patient/v3/")
     @ManagedAsync
-    public void getPatientV2(@Suspended final AsyncResponse asyncResponse, @PathParam(value="id") Long id){
+    @Consumes({MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_FORM_URLENCODED})
+    public void getPatientV3(@Suspended final AsyncResponse asyncResponse, @FormParam(value = "id") Long id, @FormParam(value = "name") String name, @Context HttpHeaders headers) {
 
-        CompletableFuture
-                .supplyAsync(() -> patientService.processPatient(id))
-                .thenApply((result) -> asyncResponse.resume(Response.ok(result).build()))
-                .exceptionally(e -> asyncResponse.resume(
-                        Response.status(INTERNAL_SERVER_ERROR).entity(e).build()));
+        CompletableFuture<String> future = patientService.createPatientV2(new Patient(id, name));
+        future.thenApply((result) -> asyncResponse.resume(Response.ok(result).build())).exceptionally(e -> asyncResponse.resume(Response.status(INTERNAL_SERVER_ERROR).entity(e).build()));
     }
 
 
